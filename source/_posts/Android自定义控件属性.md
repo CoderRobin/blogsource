@@ -1,0 +1,50 @@
+title: Android自定义控件属性
+date: 2015-01-17 23:42:03
+categories: Android
+tags: 自定义控件
+---
+# 在res/values文件下attrs.xml下增加属性：
+```
+    <?xml version="1.0" encoding="utf-8"?>
+    <resources>
+        <declare-styleable name="stylename">
+            <attr name="attrname" format="**"/>
+        </declare-styleable>
+    </resources>
+     format支持类型
+	 1. reference：参考某一资源ID。
+	 2. color：颜色值。
+	 3. boolean：布尔值。
+     4. dimension：尺寸值
+     5. float：浮点值。
+     6. integer：整型值。
+     7. string：字符串。
+     8. fraction：百分数。
+     9. enum：枚举值。
+     10. flag：位或运算。
+     属性定义时可以指定多种类型值。
+```
+<!-- more -->
+# 在布局xml中使用该属性:
+```
+    <?xml version="1.0" encoding="utf-8"?>
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:stylename="xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        >
+        <com.robin.custimizewidget
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            stylename:attrname="**"
+           _"/>
+    </RelativeLayout>
+```
+# 在自定义组件构造方法中，可以如下获得xml中定义的值：
+```
+    TypedArray a = context.obtainStyledAttributes(attrs,R.styleable.stylename);
+    a.getInt(R.styleable.stylename_***, 0);
+    a.getResourceId(R.styleable.stylename_***, -1);
+    a.recycle();//注意回收、
+```

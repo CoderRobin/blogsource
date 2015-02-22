@@ -1,0 +1,199 @@
+title: Android RecyclerView使用及自定义itemAnimator
+date: 2015-02-11 23:14:29
+categories: Android
+tags: RecyclerView
+---
+#简介
+14年google io上google就开放了RecyclerView，导入support-v7包即可使用。
+RecyclerView可以认为是AbsListview的升级版，但自带了对viewholder的使用，
+与listview缓存convertview不同的是,Recyclerview缓存的是viewholder.
+对每个item的动画也有较好的支持。
+<!--more-->
+#基本使用
+RecyclerView提供了以下5种角色
+RecyclerView.Adapter 
+RecyclerView.ViewHolder 	
+RecyclerView.LayoutManager 	布局器，负责Item视图的布局
+RecyclerView.ItemDecoration 	每个item附加的子视图，可用来绘制Divider,设置padding等
+RecyclerView.ItemAnimator 	负责添加、删除数据时的动画效果
+
+##在activity中使用
+```
+     @Override 
+    protected void onCreate(Bundle savedInstanceState) { 
+        // TODO Auto-generated method stub  
+        super.onCreate(savedInstanceState);  
+        setContentView(R.layout.activity_main);  
+   
+        final RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recycler_view);  
+        // 创建线性布局管理器
+        final LinearLayoutManager layoutManager = new LinearLayoutManager(this);  
+        // 为RecyclerView指定布局管理对象  
+        recyclerView.setLayoutManager(layoutManager);  
+       
+        final SampleRecyclerAdapter sampleRecyclerAdapter = new SampleRecyclerAdapter();  
+
+	//设置动画
+    	recyclerView.setItemAnimator(ItemAnimator)
+
+        recyclerView.setAdapter(sampleRecyclerAdapter);  
+    } 
+
+```
+##自定义adapter
+```
+    public class SampleRecyclerAdapter extends 
+            RecyclerView.Adapter<SampleRecyclerAdapter.ViewHolder>  
+    { 
+        
+      
+        // 用于创建onCreateViewHolder
+        @Override  
+        public ViewHolder onCreateViewHolder(ViewGroup parentViewGroup, int i)  
+        {  
+            View item = LayoutInflater.from(context).inflate(  
+                    R.layout.***, parentViewGroup, false);  
+            //recyclerview未提供onitemclick方法，需要自己添加
+	    item.setOnClickListener(...);
+            return new ViewHolder(item);  
+                      
+        }  
+
+
+        // 为ViewHolder设置数据  
+        @Override  
+        public void onBindViewHolder(ViewHolder viewHolder, final int position)  
+        {  
+            //  获取当前item中显示的数据  
+            final Model model = list.get(position);  
+              
+            //  设置要显示的数据  
+            viewHolder.textViewSample.setText(**);  
+            viewHolder.itemView.setTag(**);  
+        }  
+      
+        @Override  
+        public int getItemCount()  
+        {  
+      
+            return list.size();  
+        }  
+        //  删除指定的Item  
+        public void removeData(int position)  
+        {  
+            list.remove(position);  
+            //  通知RecyclerView控件某个Item已经被删除  
+            notifyItemRemoved(position);  
+              
+        }  
+        //  在指定位置添加一个新的Item  
+        public void addItem(Model model,int positionToAdd)  
+        {  
+       	    list.add(model);
+            //  通知RecyclerView控件插入了某个Item  
+            notifyItemInserted(positionToAdd);  
+        }  
+      
+        public static class ViewHolder extends RecyclerView.ViewHolder  
+        {  
+      
+            private final TextView textViewSample;  
+      
+            public ViewHolder(View itemView)  
+            {  
+                super(itemView);  
+      
+                textViewSample = (TextView) itemView  
+                        .findViewById(R.id.textViewSample);  
+            }  
+        }  
+      
+    } 
+```
+#自定义itemAnimator
+基本使用其实与普通listview区别不大，自定义item动画是其比较复杂的部分。
+谷歌官方的itemAnimator的解释如下：
+https://developer.android.com/reference/android/support/v7/widget/RecyclerView.ItemAnimator.html
+下文为一个增加item时动画的示例，
+```
+public class MyItemAnimator extends RecyclerView.ItemAnimator {
+
+    List<RecyclerView.ViewHolder> mAnimationAddViewHolders = new ArrayList<RecyclerView.ViewHolder>();
+ List<RecyclerView.ViewHolder> mAnimationRemoveViewHolders = new ArrayList<RecyclerView.ViewHolder>();
+    //需要执行动画时会系统会调用，用户无需手动调用
+    @Override
+    public void runPendingAnimations() {
+        if (!mAnimationAddViewHolders.isEmpty()) {
+ 
+            AnimatorSet animator;
+            View target;
+            for (final RecyclerView.ViewHolder viewHolder : mAnimationAddViewHolders) {
+                target = viewHolder.itemView;
+                animator = new AnimatorSet();
+
+                animator.playTogether(
+                        ObjectAnimator.ofFloat(target, "translationX", -target.getMeasuredWidth(), 0.0f),
+                        ObjectAnimator.ofFloat(target, "alpha", target.getAlpha(), 1.0f)
+                );
+
+                animator.setTarget(target);
+                animator.setDuration(100);
+                animator.addListener(new AnimatorListener() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        mAnimationAddViewHolders.remove(viewHolder);
+ 			 if (!isRunning()) {
+			dispatchAnimationsFinished();
+			}
+                    }
+                });
+                animator.start();
+            }
+        }
+	else if(!mAnimationRemoveViewHolders.isEmpty()){
+	}
+    }
+    //remove时系统会调用，返回值表示是否需要执行动画
+    @Override
+    public boolean animateRemove(RecyclerView.ViewHolder viewHolder) {
+         return mAnimationRemoveViewHolders.add(viewHolder);
+    }
+	
+    //viewholder添加时系统会调用
+    @Override
+    public boolean animateAdd(RecyclerView.ViewHolder viewHolder) {
+        return mAnimationAddViewHolders.add(viewHolder);
+    }
+
+    @Override
+    public boolean animateMove(RecyclerView.ViewHolder viewHolder, int i, int i2, int i3, int i4) {
+        return false;
+    }
+
+    @Override
+    public void endAnimation(RecyclerView.ViewHolder viewHolder) {
+    }
+
+    @Override
+    public void endAnimations() {
+    }
+
+    @Override
+    public boolean isRunning() {
+        return !(mAnimationAddViewHolders.isEmpty()&&mAnimationRemoveViewHolders.isEmpty());
+    }
+
+}
+
+
+```
+
+#总结
+RecycyclerView的使用还是比较简单的，相对listview来讲帮我们处理了较多的逻辑，
+但onClick监听等都要自己添加。
+对于item的动画，实现其实也不是特别难。。
+以下为github上第三方的itemAnimation，看了以后会对其使用了解更充分。
+https://github.com/dkmeteor/RecyclerViewAnimator
+
+
+

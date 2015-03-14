@@ -82,6 +82,14 @@ disqus_shortname:
 theme: jacman
 exclude_generator:
 
+plugins:
+- hexo-generator-feed
+- hexo-generator-sitemap
+#sitemap
+sitemap:
+path: sitemap.xml
+
+
 # Deployment
 ## Docs: http://hexo.io/docs/deployment.html
 deploy:

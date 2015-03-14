@@ -1,0 +1,67 @@
+title: Android Volley解析
+date: 2015-02-21 23:47:52
+categories: Android
+tags: volley
+---
+#简介
+Volley是android官方提供的进行网络请求的框架，亦包括了对网络图片加载的功能。特别适用于请求次数较多但数据量较小的情况。
+已经有大神对volley进行了较详细的解析，本篇博文也只是写写自己的理解。
+郭霖：
+Android Volley完全解析 
+http://blog.csdn.net/guolin_blog/article/details/17656437
+codekk:
+Volley 源码解析
+http://www.codekk.com/open-source-project-analysis/detail/Android/grumoon/Volley%20%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90
+
+
+#使用
+##初始化请求队列
+```
+RequestQueue requestQueue = Volley.newRequestQueue(context);  
+```
+##创建request并加入队列
+```
+    StringRequest stringRequest = new StringRequest(Method.POST,"http://www.baidu.com",  
+                        new Response.Listener<String>() {  
+                            @Override  
+                            public void onResponse(String response) {  
+                                Log.d("TAG", response);  
+                            }  
+                        }, new Response.ErrorListener() {  
+                            @Override  
+                            public void onErrorResponse(VolleyError error) {  
+                                Log.e("TAG", error.getMessage(), error);  
+                            }  
+                        }){ 
+	//post请求参数 
+        @Override  
+        protected Map<String, String> getParams() throws AuthFailureError {  
+            Map<String, String> map = new HashMap<String, String>();  
+            map.put("params1", "value1");  
+            map.put("params2", "value2");  
+            return map;  
+        }  
+    };  
+```
+//加入请求队列后volley就会执行请求操作并根据结果回调相应监听
+requestQueue.add(stringRequest);
+##加载图片
+```
+//这里的imageCache可以是lruCache等
+ImageLoader imageLoader = new ImageLoader(requestQueue, imageCache);
+ImageListener listener = ImageLoader.getImageListener(imageView,  
+        R.drawable.default_image, R.drawable.failed_image); 
+    imageLoader.get("http://test",  
+                    listener, 100, 100);
+或者直接使用networkImageView
+    networkImageView.setDefaultImageResId(R.drawable.default_image);  
+    networkImageView.setErrorImageResId(R.drawable.failed_image);  
+    networkImageView.setImageUrl("http://test",  
+                    imageLoader);  
+```
+#源码分析
+volley的网络部分主要使用生产者消费者模式。
+如下图
+![volley](/image/volley.png) 
+
+#总结
